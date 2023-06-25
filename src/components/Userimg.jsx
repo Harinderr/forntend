@@ -12,6 +12,9 @@ useEffect(()=> {
     setIndex(index+1)
 },[])
     return (
-        <div className= {`w-8 h-8 rounded-full text-center  flex justify-center items-center ${colorarray[index]} `}> {Firstletter}</div>
+        <div className= {`w-8 h-8 relative rounded-full text-center  flex justify-center items-center bg-yellow-400 `}> {Firstletter}
+    <div className="absolute bg-green-400 w-2 h-2 bottom-0 right-0 rounded full"></div> 
+  
+        </div>
     )
 }

@@ -2,6 +2,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import Userimg from "./Userimg";
 import { userContext } from "../userContext";
 import axios from "axios";
+import _ from "lodash";
 export default function Chat() {
   const [ws, setWs] = useState(null);
   const [onlinepeople, setOnlinepeople] = useState([]);
@@ -11,12 +12,13 @@ export default function Chat() {
   const [allmessages, setAllmessages] = useState([]);
   const chatContainerRef = useRef(null);
   const inputboxRef = useRef(null);
+
   useEffect(() => {
     connecttoWs();
   }, []);
 
   function connecttoWs() {
-    const ws = new WebSocket("ws://real-ruby-barnacle-hem.cyclic.app");
+    const ws = new WebSocket("ws://localhost:3000");
     setWs(ws);
     ws.addEventListener("message", handleMessage);
     ws.addEventListener("close", () => {
@@ -37,29 +39,64 @@ export default function Chat() {
       axios
         .get("/messages/" + selectedUserId)
         .then((result) => {
-          setAllmessages(result.data);
+          setAllmessages([...result.data]);
         })
         .catch((err) => console.log("error occurred" + err));
     }
   }, [selectedUserId]);
+  
+  const people = {};
 
   function showOnlinePeople(peoplearray) {
-    const people = {};
-    peoplearray.forEach(({ userid, username }) => {
-      people[userid] = username;
+  
+    peoplearray.forEach(({ userid, username}) => {
+      people[userid] = username; 
+   
+      
     });
+   
     setOnlinepeople(people);
+    
   }
+  useEffect(()=> {
+    axios.get('/people').then((result, err)=> {
+      if(err){
+        console.log(err)
+      }
+      else {
+        
+      const newdata = result.data
+      const updatedData = {}
+        newdata.map(({_id,username})=> {
+        updatedData[_id] = username
+       })
+       setOnlinepeople(updatedData);
+      }
+    
+    })
+  } , [onlinepeople])
   function handleMessage(e) {
     const messageData = JSON.parse(e.data);
     if ("online" in messageData) {
+     console.log(messageData.online)
       showOnlinePeople(messageData.online);
     } else if ("text" in messageData) {
-      setAllmessages([...allmessages, { ...messageData }]);
+      setAllmessages((prev) => {
+        const updatedMessages = [...prev];
+
+        // Remove any existing messages with the same id
+        const filteredMessages = _.uniqBy(
+          [...updatedMessages, messageData],
+          "_id"
+        );
+
+        return filteredMessages;
+      });
     }
   }
   function sendmessage(e) {
     e.preventDefault();
+
     ws.send(
       JSON.stringify({
         newMessage: {
@@ -68,15 +105,16 @@ export default function Chat() {
         },
       })
     );
-    setMessage("");
+
     setAllmessages((prev) => [
       ...prev,
       { text: message, sender: id, recipient: selectedUserId },
     ]);
+    setMessage("");
   }
 
   const friends = Object.keys(onlinepeople).filter((p) => p !== id);
-
+ 
   return (
     <div className="chatbox flex h-screen overflow-x-hidden">
       <div className="left w-1/4 bg-indigo-200">
@@ -126,7 +164,7 @@ export default function Chat() {
             ) : (
               allmessages.map((val, index) => (
                 <div
-                  key={index}
+                  key={val.id}
                   className={`rounded p-4 flex ${
                     val.sender === id ? "justify-end" : "justify-start"
                   } `}
@@ -137,7 +175,8 @@ export default function Chat() {
                       val.sender === id
                         ? "bg-blue-500  rounded inline-block p-2 text-white"
                         : "bg-slate-500  rounded inline-block p-2 text-white "
-                    } style={{maxWidth:'70%'}}
+                    }
+                    style={{ maxWidth: "70%" }}
                   >
                     {val.text}
                   </div>{" "}
