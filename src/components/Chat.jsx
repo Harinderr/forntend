@@ -3,14 +3,18 @@ import Userimg from "./Userimg";
 import { userContext } from "../userContext";
 import axios from "axios";
 import _ from "lodash";
+import People from "./People";
+
 export default function Chat() {
   const [ws, setWs] = useState(null);
-  const [onlinepeople, setOnlinepeople] = useState([]);
+  const [onlinepeople, setOnlinepeople] = useState({});
+  const [offlinepeople, setOfflinepeople] = useState([])
   const [selectedUserId, setSelectedUserId] = useState(null);
-  const { id } = useContext(userContext);
+  const { id,user ,setUser, setId} = useContext(userContext);
   const [message, setMessage] = useState([]);
   const [allmessages, setAllmessages] = useState([]);
   const chatContainerRef = useRef(null);
+
   const inputboxRef = useRef(null);
 
   useEffect(() => {
@@ -45,41 +49,39 @@ export default function Chat() {
     }
   }, [selectedUserId]);
   
-  const people = {};
 
-  function showOnlinePeople(peoplearray) {
-  
-    peoplearray.forEach(({ userid, username}) => {
-      people[userid] = username; 
-   
-      
-    });
-   
-    setOnlinepeople(people);
-    
-  }
   useEffect(()=> {
     axios.get('/people').then((result, err)=> {
       if(err){
         console.log(err)
       }
       else {
-        
-      const newdata = result.data
-      const updatedData = {}
-        newdata.map(({_id,username})=> {
-        updatedData[_id] = username
-       })
-       setOnlinepeople(updatedData);
+        const userdata = result.data
+        const offline = {}
+       const filterarray =  userdata.filter(({_id}) => _id !== id)
+        .filter(({_id}) => !Object.keys(onlinepeople).includes(_id))
+      filterarray.forEach(({_id, username})=> {
+        offline[_id] = username
+      })
+      setOfflinepeople(offline)
+     
       }
-    
-    })
-  } , [onlinepeople])
+  } )}, [])
+  
+  function showOnlinePeople(val) {
+    const people = {}
+    val.map(({userid, username}) => {
+      people[userid] = username
+    });
+
+   return  setOnlinepeople({...people})
+  }
+ 
   function handleMessage(e) {
     const messageData = JSON.parse(e.data);
     if ("online" in messageData) {
-     console.log(messageData.online)
-      showOnlinePeople(messageData.online);
+     
+      showOnlinePeople(messageData.online)
     } else if ("text" in messageData) {
       setAllmessages((prev) => {
         const updatedMessages = [...prev];
@@ -94,6 +96,7 @@ export default function Chat() {
       });
     }
   }
+ 
   function sendmessage(e) {
     e.preventDefault();
 
@@ -113,11 +116,20 @@ export default function Chat() {
     setMessage("");
   }
 
+  function logout(){
+    axios.post('/logout').then(()=> {
+      setId(null)
+      setUser(null)
+      setWs(null)
+    }).catch(err => console.log('unable to logout', err))
+    
+  }
   const friends = Object.keys(onlinepeople).filter((p) => p !== id);
+
  
   return (
     <div className="chatbox flex h-screen overflow-x-hidden">
-      <div className="left w-1/4 bg-indigo-200">
+      <div className="left w-1/4 bg-indigo-200 relative">
         <div className="logo flex p-4">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -137,20 +149,15 @@ export default function Chat() {
             Messenger
           </span>
         </div>
-        {friends.map((userid) => (
-          <div
-            key={userid}
-            className={`p-3 flex items-center ${
-              selectedUserId === userid
-                ? "bg-indigo-100 border-l-4 border-blue-500"
-                : ""
-            }`}
-            onClick={() => setSelectedUserId(userid)}
-          >
-            <Userimg value={onlinepeople[userid]} id={userid} />
-            <div className="pl-4"> {onlinepeople[userid]}</div>
-          </div>
-        ))}
+      <People setSelectedUserId={setSelectedUserId} friends={friends} onlinepeople={onlinepeople} selectedUserId={selectedUserId} offlinepeople={offlinepeople}/>
+      <div className="logout  flex justify-between absolute bottom-0 left-0 right-0 p-4">
+  <div className="userName  flex  ">   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+</svg>
+
+       <span className="text-sm mx-2">{user}</span></div> 
+        <button onClick={()=> logout()} className="text-sm px-3 py-1 text-slate-600 bg-blue-200 border border-slate-200">Logout</button>
+      </div>
       </div>
       <div className="right w-3/4 bg-blue-100 relative">
         <div className="message-container h-5/6 mt-5 ">
