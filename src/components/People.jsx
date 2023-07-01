@@ -1,4 +1,5 @@
 import Userimg from "./Userimg"
+import './chat.css'
 export default function People({friends, onlinepeople,selectedUserId,offlinepeople,setSelectedUserId}){
 
     return (
@@ -7,7 +8,7 @@ export default function People({friends, onlinepeople,selectedUserId,offlinepeop
         {friends.map((userid) => (
             <div
               key={userid}
-              className={`p-3 flex items-center ${
+              className={`p-3 flex items-center cursor-pointer ${
                 selectedUserId === userid
                   ? "bg-indigo-100 border-l-4 border-blue-500"
                   : ""
@@ -15,7 +16,7 @@ export default function People({friends, onlinepeople,selectedUserId,offlinepeop
               onClick={() => setSelectedUserId(userid)}
             >
               <Userimg value={onlinepeople[userid]} id={userid} status={"online"} />
-              <div className="pl-4"> {onlinepeople[userid]}</div>
+              <div className="username pl-4"> {onlinepeople[userid]}</div>
             </div>
           ))}
         {
@@ -23,7 +24,7 @@ export default function People({friends, onlinepeople,selectedUserId,offlinepeop
                
              return(  <div
                 key={userid}
-                className={`p-3 flex items-center ${
+                className={`p-3 flex items-center cursor-pointer ${
                   selectedUserId === userid
                     ? "bg-indigo-100 border-l-4 border-blue-500"
                     : ""
@@ -32,7 +33,7 @@ export default function People({friends, onlinepeople,selectedUserId,offlinepeop
               >
                 
                 <Userimg value={offlinepeople[userid]} id={userid} status={"offline"}/>
-                <div className="pl-4"> {offlinepeople[userid]}</div>
+                <div className="username pl-4"> {offlinepeople[userid]}</div>
               </div>) 
             })
         }

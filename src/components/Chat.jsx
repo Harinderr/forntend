@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from "react";
-import Userimg from "./Userimg";
+import './chat.css'
 import { userContext } from "../userContext";
 import axios from "axios";
 import _ from "lodash";
@@ -43,7 +43,8 @@ export default function Chat() {
       axios
         .get("/messages/" + selectedUserId)
         .then((result) => {
-          setAllmessages([...result.data]);
+          setAllmessages(result.data);
+          console.log(result.data)
         })
         .catch((err) => console.log("error occurred" + err));
     }
@@ -63,10 +64,11 @@ export default function Chat() {
       filterarray.forEach(({_id, username})=> {
         offline[_id] = username
       })
+   
       setOfflinepeople(offline)
      
       }
-  } )}, [])
+  } )}, [onlinepeople])
   
   function showOnlinePeople(val) {
     const people = {}
@@ -83,39 +85,68 @@ export default function Chat() {
      
       showOnlinePeople(messageData.online)
     } else if ("text" in messageData) {
+      console.log(messageData)
       setAllmessages((prev) => {
-        const updatedMessages = [...prev];
-
-        // Remove any existing messages with the same id
-        const filteredMessages = _.uniqBy(
-          [...updatedMessages, messageData],
-          "_id"
-        );
-
-        return filteredMessages;
-      });
-    }
+  // Check if the message with the same identifier already exists
+  const existingMessage = prev.find((msg) => msg.id === messageData._id);
+  
+  if (existingMessage) {
+    // Message already exists, return the previous state without adding the duplicate message
+    return prev;
+  } else {
+    // Message doesn't exist, add the new message to the state
+    return [...prev, messageData];
   }
+});
+     
+      }
+    }
+  
  
-  function sendmessage(e) {
-    e.preventDefault();
+  function sendmessage(e,file = null) {
+   if(e)
+    {e.preventDefault()}
 
     ws.send(
       JSON.stringify({
         newMessage: {
           recipient: selectedUserId,
           text: message,
+          file
         },
       })
     );
 
-    setAllmessages((prev) => [
-      ...prev,
-      { text: message, sender: id, recipient: selectedUserId },
-    ]);
+    // setAllmessages((prev) => [
+    //   ...prev,
+    //   { text: message, sender: id, recipient: selectedUserId, _id : Date.now()},
+    // ]);
     setMessage("");
+    if(file){
+      axios
+      .get("/messages/" + selectedUserId)
+      .then((result) => {
+        setAllmessages(()=> result.data);
+      })
+      .catch((err) => console.log("error occurred" + err));
+    }
+    else {
+      setAllmessages((prev) => [
+        ...prev,
+        { text: message, sender: id, recipient: selectedUserId}
+      ]);
+    }
   }
-
+ function sendFile(e){
+     const reader = new FileReader()
+     reader.readAsDataURL(e.target.files[0])
+     reader.onload = () => {
+      sendmessage(null, {
+        info : e.target.files[0].name,
+        data : reader.result
+      })
+     }
+ }
   function logout(){
     axios.post('/logout').then(()=> {
       setId(null)
@@ -131,22 +162,9 @@ export default function Chat() {
     <div className="chatbox flex h-screen overflow-x-hidden">
       <div className="left w-1/4 bg-indigo-200 relative">
         <div className="logo flex p-4">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="w-6 h-6"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"
-            />
-          </svg>{" "}
-          <span className="pl-2 font-bold text-xl text-indigo-500">
-            Messenger
+        
+          <span className="CmpLogo pl-2 font-bold text-xl text-indigo-500">
+          <i class="fa-solid fa-comments"></i>   CHATZIZZ
           </span>
         </div>
       <People setSelectedUserId={setSelectedUserId} friends={friends} onlinepeople={onlinepeople} selectedUserId={selectedUserId} offlinepeople={offlinepeople}/>
@@ -171,7 +189,7 @@ export default function Chat() {
             ) : (
               allmessages.map((val, index) => (
                 <div
-                  key={val.id}
+                  key={val._id}
                   className={`rounded p-4 flex ${
                     val.sender === id ? "justify-end" : "justify-start"
                   } `}
@@ -180,12 +198,21 @@ export default function Chat() {
                   <div
                     className={
                       val.sender === id
-                        ? "bg-blue-500  rounded inline-block p-2 text-white"
+                        ? "bg-white  rounded inline-block p-2 text-slate-500"
                         : "bg-slate-500  rounded inline-block p-2 text-white "
                     }
                     style={{ maxWidth: "70%" }}
                   >
                     {val.text}
+                    {
+                      val.file && (
+                        <div key={val._id}>
+                          <a target="_blank" href={axios.defaults.baseURL+ "uploads/"+ val.file}>
+                            {val.file}
+                          </a>
+                        </div>
+                      )
+                    }
                   </div>{" "}
                   <br />{" "}
                 </div>
@@ -193,11 +220,11 @@ export default function Chat() {
             )}
           </div>
         </div>
-        <div className="textmessage w-full absolute bottom-4">
+        <div className="textmessage w-full  absolute bottom-4">
           <form
             ref={inputboxRef}
             action=""
-            className="w-full  flex items-center justify-center"
+            className="w-full flex items-center justify-center"
             onSubmit={sendmessage}
           >
             <input
@@ -207,11 +234,18 @@ export default function Chat() {
               value={message}
               type="text"
               placeholder="Enter text here"
-              className="  p-2 w-9/12 "
+              className="  p-2 w-4/6 rounded "
             />
+            <label type='button' className="p-2 bg-blue-200 cursor-pointer text-black-300">
+                <input type="file" className="hidden" onChange={sendFile} />
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+  <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+</svg>
+
+            </label>
             <button
               type="submit"
-              className=" p-2   bg-blue-600 text-white w-1/12 "
+              className=" p-2   bg-blue-600 text-white rounded  "
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -233,4 +267,4 @@ export default function Chat() {
       </div>
     </div>
   );
-}
+            }

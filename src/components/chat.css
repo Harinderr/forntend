@@ -1,0 +1,19 @@
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.CmpLogo {
+    font-family: 'Signika Negative', sans-serif;
+   letter-spacing: 1px;
+    }
+
+.username {
+    font-family: 'Yantramanav', sans-serif;
+    letter-spacing: .5px;
+    font-weight: 400;
+    font-size: 1.2rem;
+
+}
