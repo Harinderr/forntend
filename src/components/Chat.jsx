@@ -22,7 +22,7 @@ export default function Chat() {
   }, []);
 
   function connecttoWs() {
-    const ws = new WebSocket("wss://exuberant-elk-spacesuit.cyclic.app");
+    const ws = new WebSocket("wss://https://sudsy-continuous-orchestra.glitch.me");
     setWs(ws);
     ws.addEventListener("message", handleMessage);
     ws.addEventListener("close", () => {
@@ -207,7 +207,7 @@ export default function Chat() {
                     {
                       val.file && (
                         <div key={val._id}>
-                          <a target="_blank" href={axios.defaults.baseURL+ "uploads/"+ val.file}>
+                          <a target="_blank" href={axios.defaults.baseURL+ "/uploads/"+ val.file}>
                             {val.file}
                           </a>
                         </div>
