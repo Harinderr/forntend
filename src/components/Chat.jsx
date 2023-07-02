@@ -22,7 +22,7 @@ export default function Chat() {
   }, []);
 
   function connecttoWs() {
-    const ws = new WebSocket("wss://https://sudsy-continuous-orchestra.glitch.me");
+    const ws = new WebSocket("wss://glimmer-excited-eocursor.glitch.me");
     setWs(ws);
     ws.addEventListener("message", handleMessage);
     ws.addEventListener("close", () => {
